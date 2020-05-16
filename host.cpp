@@ -17,7 +17,6 @@ using namespace std;
 
 string analyze(string str){
 	int h;
-	int d;
 	int s_end;
 	string domain;
 	string data;
@@ -55,7 +54,7 @@ int main(int argc , char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 	// socket
-	int socket_desc , client_sock , c , read_size;
+	int socket_desc , client_sock , c ;
 	// ipv4 struct
 	struct sockaddr_in server , client;
 	char client_message[BUFSIZE+1]={};

@@ -29,6 +29,7 @@ int main(void){
       }
     printf("<button onclick=\"location.href=getlink()\" type=\"button\">insert</button>\n");
     printf("<script>\n");
+
     printf("function getlink(){var nowlink = window.location.href; var link = nowlink.substring(0,nowlink.search(\"view\")); return link+'insert';}\n");
     printf("</script>\n");
     printf("</body></html>\n");
