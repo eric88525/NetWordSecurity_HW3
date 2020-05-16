@@ -1,6 +1,3 @@
-
-
-
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
@@ -146,6 +143,10 @@ int main(int argc , char *argv[]){
 				exit(1);
 			}
 			if(pipe(cgiInput)<0){
+				perror("pipe");
+				exit(EXIT_FAILURE);
+			}
+			if(pipe(cgiOutput)<0){
 				perror("pipe");
 				exit(EXIT_FAILURE);
 			}

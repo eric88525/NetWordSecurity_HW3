@@ -19,7 +19,7 @@ int main(void){
     printf("HTTP/1.1 200 OK\r\n");
     printf("Content-Type: text/html; charset=UTF-8\r\n\r\n");
     // output to stdout
-    printf("<html><head><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n");
+    printf("<html><head><link rel=\"icon\" href=\"data:;base64,=\"><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n");
     printf("<title>DB data</title>\n");
     
     printf("<body>");
@@ -36,5 +36,5 @@ int main(void){
     printf("\n" );
     fclose(fp);
     
-    exit(0);
+    exit(1);
 }
