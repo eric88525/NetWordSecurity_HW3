@@ -73,7 +73,7 @@ string analyze(string str){
    		cout<<domain<<"*"<<"\n";
    		return domain;
    	}
-   
+   return "";
 }
 
 
@@ -127,21 +127,17 @@ int main(int argc , char *argv[]){
 	}
 	puts("bind done");
 
-	
-	/* Creates a new process to execute cgi program */
-	
-
-	/*		1> cgiInput  >0	
-	host                      CGI
-			0< cgiOutput <1				*/
-	
-
+	listen(socket_desc , 3);
+	//SSL init
+    SSL_library_init();
+    SSL_CTX *ctx = SSL_CTX_new (TLSv1_2_server_method()); 
+    //set ca about
+	setCA(ctx);
+	SSL * ssl;
 	while(1){
 			//Listen
-			listen(socket_desc , 3);
 			printf("%s\n","listening" );
-			//client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c);		
-			
+
 			if ( (client_sock = accept(socket_desc, (struct sockaddr*)&client, (socklen_t*)&c)) == -1 ){
 				perror("accept");
 				exit(1);
@@ -150,12 +146,19 @@ int main(int argc , char *argv[]){
 				perror("pipe");
 				exit(EXIT_FAILURE);
 			}
-			if(pipe(cgiOutput)<0){
-				perror("pipe");
-				exit(EXIT_FAILURE);
+			printf("%s\n","Got a client!" );
+			ssl  = SSL_new(ctx);
+			SSL_set_fd(ssl, client_sock);
+			if (SSL_accept(ssl) == -1) {
+				perror("accept");
+				ERR_print_errors_fp(stderr);  
+				close(client_sock);
+				break;
 			}
+			
 			cpid = fork();	
 			printf("%s\n", "go fork!");
+
 			/*parent process*/
 			if(cpid > 0){ 			
 				printf("this is parent process\n");
@@ -165,43 +168,41 @@ int main(int argc , char *argv[]){
 
 				waitpid(cpid, &status, 0);
 				puts("child wait end");
-				puts("===============1\n");
-				memset(message,0,BUFSIZE);
-				puts(message);
-				puts("===============2\n");
+				
 				// receive the message from the  CGI program
 				i=0;
+				memset(message,0,BUFSIZE);
 				while (read(cgiOutput[0], &cb, 1) > 0){
 					// output the message to terminal
 					message[i++]=cb;
 					//write(STDOUT_FILENO, &cb, 1);
-
 				}
-				send(client_sock,message,sizeof(message),0);
+				SSL_write(ssl,message,sizeof(message));
+				//send(client_sock,message,sizeof(message),0);
 				puts("what i send\n");
 				puts(message);
 				
 				// connection finish
 				close(cgiOutput[0]);
 				close(cgiInput[1]);
-				
-				
+				SSL_shutdown(ssl);
+				SSL_free(ssl);
 				printf("%s\n","parent finished" );
-				
 			}/*child process*/
 			else if(cpid == 0){	
 				printf("this is child process\n");
 				
-				memset(message,0,BUFSIZE+1);
-				long ret;
+				memset(client_message,0,BUFSIZE+1);
+				/*long ret;
 
 				ret = read(client_sock,client_message,BUFSIZE); 
 
 				if (ret>0&&ret<BUFSIZE)
         			client_message[ret] = 0;
     			else
-        			client_message[0] = 0;
+        			client_message[0] = 0;*/
 				//printf("child gets %s\nlength is %d\n", client_message,strlen(client_message));
+				SSL_read (ssl, client_message, sizeof(client_message));
 
 				string cm;
         		cm = client_message;
@@ -237,7 +238,8 @@ int main(int argc , char *argv[]){
 					execlp("./view.cgi","./view.cgi",NULL);
 				}else if(result.find("insert")!=result.npos){
 					execlp("./insert.cgi","./insert.cgi",NULL);		
-					
+				}else if(result == "favicon.ico"){
+					exit(0);
 				}
 				exit(0);
 			}
