@@ -10,10 +10,54 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>   //inet_addr
 #include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 #define DEBUG
 #define BUFSIZE 8096
+
+#define CA_FILE                "./CA/cacert.pem"
+#define SERVER_KEY             "./server/key.pem"
+#define SERVER_CERT            "./server/cert.pem"
+
 #include <iostream>
 using namespace std;
+
+void setCA(SSL_CTX *ctx){
+	// SSL_VERIFY_PEER = verify both  
+	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
+
+	if (SSL_CTX_load_verify_locations(ctx, CA_FILE, 0) != 1) {
+		SSL_CTX_free(ctx);
+		printf("Failed to load CA file %s", CA_FILE);
+	}
+	//load server cert
+	if (SSL_CTX_use_certificate_file(ctx, SERVER_CERT, SSL_FILETYPE_PEM) <= 0) {
+		ERR_print_errors_fp(stdout);
+		exit(1);
+	}else{
+		puts("load SERVER_CERT success");
+	}
+	// load server private key
+	if (SSL_CTX_use_PrivateKey_file(ctx, SERVER_KEY, SSL_FILETYPE_PEM) <= 0) {
+		printf("load private key fail.\n");
+		ERR_print_errors_fp(stdout);
+		exit(1);
+	}else{
+		puts("load server private key success");
+	}
+	// check if cert and private key is ok
+	if (!SSL_CTX_check_private_key(ctx)) {
+		ERR_print_errors_fp(stdout);
+		exit(1);
+	}else{
+		puts("cert and privateKey ok!");
+	}
+}
 
 string analyze(string str){
 	int h;
