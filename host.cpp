@@ -1,3 +1,6 @@
+
+
+
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
@@ -146,6 +149,9 @@ int main(int argc , char *argv[]){
 				perror("pipe");
 				exit(EXIT_FAILURE);
 			}
+			static int s_server_session_id_context = 1;
+    		SSL_CTX_set_session_id_context(ctx,(const uint8_t *)&s_server_session_id_context,sizeof(s_server_session_id_context));
+			
 			printf("%s\n","Got a client!" );
 			ssl  = SSL_new(ctx);
 			SSL_set_fd(ssl, client_sock);
@@ -156,11 +162,56 @@ int main(int argc , char *argv[]){
 				break;
 			}
 			
+
+
 			cpid = fork();	
 			printf("%s\n", "go fork!");
 
+			if(cpid == 0){	
+				printf("this is child process\n");
+				memset(client_message,0,BUFSIZE+1);
+				SSL_read (ssl, client_message, sizeof(client_message));
+
+				string cm;
+        		cm = client_message;
+        			
+				cout<<"child gets:\n"<<cm<<"\n";
+				string result = analyze(cm);
+
+				cout<<"result is:"<<result<<"\n";
+
+				// do stuff		
+				write(cgiInput[1], result.c_str(), result.size()*sizeof(char));
+
+				//close unused fd
+				close(cgiInput[1]);
+				close(cgiOutput[0]);
+
+				
+				//redirect the output from stdout to cgiOutput
+				dup2(cgiOutput[1],STDOUT_FILENO);
+
+
+				//redirect the input from stdin to cgiInput
+				dup2(cgiInput[0], STDIN_FILENO); 
+
+				//after redirect we don't need the old fd 
+				close(cgiInput[0]);
+				close(cgiOutput[1]);
+
+				
+				if(result==("view")){
+					execlp("./view.cgi","./view.cgi",NULL);
+				}else if(result.find("insert")!=result.npos){
+					execlp("./insert.cgi","./insert.cgi",NULL);		
+				}else if(result == "favicon.ico"){
+					exit(0);
+				}
+				exit(0);
+			}
 			/*parent process*/
-			if(cpid > 0){ 			
+			else if(cpid > 0){ 	
+						
 				printf("this is parent process\n");
 				//close unused fd
 				close(cgiOutput[1]);
@@ -189,60 +240,7 @@ int main(int argc , char *argv[]){
 				SSL_free(ssl);
 				printf("%s\n","parent finished" );
 			}/*child process*/
-			else if(cpid == 0){	
-				printf("this is child process\n");
-				
-				memset(client_message,0,BUFSIZE+1);
-				/*long ret;
-
-				ret = read(client_sock,client_message,BUFSIZE); 
-
-				if (ret>0&&ret<BUFSIZE)
-        			client_message[ret] = 0;
-    			else
-        			client_message[0] = 0;*/
-				//printf("child gets %s\nlength is %d\n", client_message,strlen(client_message));
-				SSL_read (ssl, client_message, sizeof(client_message));
-
-				string cm;
-        		cm = client_message;
-        			
-				cout<<"child gets:\n"<<cm<<"\n";
-				string result = analyze(cm);
-
-				cout<<"result is:"<<result<<"\n";
-
-				//char *cstr = new char[result.length() + 1];
-				//strcpy(cstr, result.c_str());
-				// do stuff		
-				write(cgiInput[1], result.c_str(), result.size()*sizeof(char));
-				//delete [] cstr;
-				//close unused fd
-				close(cgiInput[1]);
-				close(cgiOutput[0]);
-
-				
-				//redirect the output from stdout to cgiOutput
-				dup2(cgiOutput[1],STDOUT_FILENO);
-
-
-				//redirect the input from stdin to cgiInput
-				dup2(cgiInput[0], STDIN_FILENO); 
-
-				//after redirect we don't need the old fd 
-				close(cgiInput[0]);
-				close(cgiOutput[1]);
-
-				
-				if(result==("view")){
-					execlp("./view.cgi","./view.cgi",NULL);
-				}else if(result.find("insert")!=result.npos){
-					execlp("./insert.cgi","./insert.cgi",NULL);		
-				}else if(result == "favicon.ico"){
-					exit(0);
-				}
-				exit(0);
-			}
+			 
 		 
 	}
 	close(socket_desc);
