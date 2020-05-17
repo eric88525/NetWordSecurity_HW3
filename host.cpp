@@ -19,11 +19,9 @@
 #include <openssl/err.h>
 #define DEBUG
 #define BUFSIZE 8096
-
 #define CA_FILE                "./CA/cacert.pem"
 #define SERVER_KEY             "./server/key.pem"
 #define SERVER_CERT            "./server/cert.pem"
-
 #include <iostream>
 using namespace std;
 
@@ -76,8 +74,6 @@ string analyze(string str){
    return "";
 }
 
-
-
 int main(int argc , char *argv[]){
 
 	int cgiInput[2];
@@ -126,7 +122,6 @@ int main(int argc , char *argv[]){
 		return 1;
 	}
 	puts("bind done");
-
 	listen(socket_desc , 3);
 	//SSL init
     SSL_library_init();
@@ -134,10 +129,9 @@ int main(int argc , char *argv[]){
     //set ca about
 	setCA(ctx);
 	SSL * ssl;
-	while(1){
-			//Listen
-			printf("%s\n","listening" );
 
+	while(1){
+			printf("%s\n","listening" );
 			if ( (client_sock = accept(socket_desc, (struct sockaddr*)&client, (socklen_t*)&c)) == -1 ){
 				perror("accept");
 				exit(1);
@@ -150,6 +144,7 @@ int main(int argc , char *argv[]){
 				perror("pipe");
 				exit(EXIT_FAILURE);
 			}
+			// session id check
 			static int s_server_session_id_context = 1;
     		SSL_CTX_set_session_id_context(ctx,(const uint8_t *)&s_server_session_id_context,sizeof(s_server_session_id_context));
 			
@@ -162,12 +157,10 @@ int main(int argc , char *argv[]){
 				close(client_sock);
 				break;
 			}
-			
-
-
 			cpid = fork();	
 			printf("%s\n", "go fork!");
 
+			/*child process*/
 			if(cpid == 0){	
 				printf("this is child process\n");
 				memset(client_message,0,BUFSIZE+1);
@@ -230,17 +223,15 @@ int main(int argc , char *argv[]){
 					//write(STDOUT_FILENO, &cb, 1);
 				}
 				SSL_write(ssl,message,sizeof(message));
-				//send(client_sock,message,sizeof(message),0);
 				puts("what i send\n");
 				puts(message);
-				
 				// connection finish
 				close(cgiOutput[0]);
 				close(cgiInput[1]);
 				SSL_shutdown(ssl);
 				SSL_free(ssl);
 				printf("%s\n","parent finished" );
-			}/*child process*/
+			}
 			 
 		 
 	}
