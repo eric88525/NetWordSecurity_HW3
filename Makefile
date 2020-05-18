@@ -1,4 +1,4 @@
-all: Host view insert 
+all: Host view  getfile
 
 CC = gcc
 GG = g++
@@ -8,8 +8,8 @@ Host: host.cpp
 view: view.c
 	$(CC) -o view.cgi view.c
 
-insert: insert.c
-	$(CC) -o insert.cgi insert.c
+getfile: getfile.c
+	$(CC) -o getfile.cgi getfile.c
 
 .PHONY: clean,run
 clean:

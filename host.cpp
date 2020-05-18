@@ -174,9 +174,16 @@ int main(int argc , char *argv[]){
 
 				cout<<"result is:"<<result<<"\n";
 
-				// do stuff		
-				write(cgiInput[1], result.c_str(), result.size()*sizeof(char));
-
+				//getfile=test1.c
+				if(result.find("getfile")!=result.npos){
+					cm.assign(result,8,result.size());
+					cout<<"i got the"<<cm<<"\n";
+					write(cgiInput[1], cm.c_str(), cm.size()*sizeof(char));
+				}else{
+					// do stuff		
+					write(cgiInput[1], result.c_str(), result.size()*sizeof(char));
+				}
+				
 				//close unused fd
 				close(cgiInput[1]);
 				close(cgiOutput[0]);
@@ -196,10 +203,8 @@ int main(int argc , char *argv[]){
 				
 				if(result==("view")){
 					execlp("./view.cgi","./view.cgi",NULL);
-				}else if(result.find("insert")!=result.npos){
-					execlp("./insert.cgi","./insert.cgi",NULL);		
-				}else if(result == "favicon.ico"){
-					exit(0);
+				}else if(result.find("getfile")!=result.npos){
+					execlp("./getfile.cgi","./getfile.cgi",NULL);	
 				}
 				exit(0);
 			}
